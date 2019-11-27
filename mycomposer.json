@@ -1,0 +1,18 @@
+{
+    "config": {
+        "vendor-dir": "vendor"
+    },
+    "require": {
+        "php": ">=5.6",
+        "ext-json": "*",
+		"projectsoft/evolution":"dev-master"
+    },
+	"repositories":[
+		{
+			"type":"git",
+			"url":"https://github.com/STUDIONIONS/evolution"
+		}
+	],
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
