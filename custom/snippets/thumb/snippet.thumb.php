@@ -20,13 +20,14 @@
  */
 
 use WebPConvert\WebPConvert;
+use ProjectSoft\Util;
 
 if (!defined('MODX_BASE_PATH')) {
-    die('What are you doing? Get out of here!');
+	die('What are you doing? Get out of here!');
 }
 
 if (!empty($input) && strtolower(substr($input, -4)) == '.svg') {
-    return $input;
+	return $input;
 }
 
 $newFolderAccessMode = $modx->getConfig('new_folder_permissions');
@@ -45,27 +46,27 @@ $thumbNoImage = $phpThumbPath . 'noimage.png';
 $noImage = isset($noImage) ? (is_file(MODX_BASE_PATH . $noImage) ? $noImage : $thumbNoImage) : $thumbNoImage;
 
 if (!file_exists($path) && mkdir($path) && is_dir($path)) {
-    chmod($path, $newFolderAccessMode);
+	chmod($path, $newFolderAccessMode);
 }
 
 if (!empty($input)) {
-    $input = rawurldecode($input);
+	$input = rawurldecode($input);
 }
 
 if (empty($input) || !file_exists(MODX_BASE_PATH . $input)) {
-    $input = $noImage;
+	$input = $noImage;
 }elseif(!is_file(MODX_BASE_PATH . $input)){
-     $input = $noImage;
+	 $input = $noImage;
 }
 
 /**
  * allow read in phpthumb cache folder
  */
 if (!file_exists(MODX_BASE_PATH . $cacheFolder . '/.htaccess') &&
-    $cacheFolder !== $defaultCacheFolder &&
-    strpos($cacheFolder, $defaultCacheFolder) === 0
+	$cacheFolder !== $defaultCacheFolder &&
+	strpos($cacheFolder, $defaultCacheFolder) === 0
 ) {
-    file_put_contents(MODX_BASE_PATH . $cacheFolder . '/.htaccess', "order deny,allow\nallow from all\n");
+	file_put_contents(MODX_BASE_PATH . $cacheFolder . '/.htaccess', "order deny,allow\nallow from all\n");
 }
 
 $path_parts = pathinfo($input);
@@ -73,67 +74,67 @@ $tmpImagesFolder = str_replace('assets/images', '', $path_parts['dirname']);
 $tmpImagesFolder = explode('/', $tmpImagesFolder);
 $ext = strtolower($path_parts['extension']);
 $options = 'f=' . (in_array($ext, array('png', 'gif', 'jpeg')) ? $ext : 'jpg&q=85') . '&' .
-    strtr($options, array(',' => '&', '_' => '=', '{' => '[', '}' => ']'));
+	strtr($options, array(',' => '&', '_' => '=', '{' => '[', '}' => ']'));
 
 parse_str($options, $params);
 foreach ($tmpImagesFolder as $folder) {
-    if (!empty($folder)) {
-        $cacheFolder .= '/' . $folder;
-        $path = MODX_BASE_PATH . $cacheFolder;
-        if (!file_exists($path) && mkdir($path) && is_dir($path)) {
-            chmod($path, $newFolderAccessMode);
-        }
-    }
+	if (!empty($folder)) {
+		$cacheFolder .= '/' . $folder;
+		$path = MODX_BASE_PATH . $cacheFolder;
+		if (!file_exists($path) && mkdir($path) && is_dir($path)) {
+			chmod($path, $newFolderAccessMode);
+		}
+	}
 }
 
 $fNamePref = rtrim($cacheFolder, '/') . '/';
 $fName = $path_parts['filename'];
 $fNameSuf = '-' .
-    (isset($params['w']) ? $params['w'] : '') . 'x' . (isset($params['h']) ? $params['h'] : '') . '-' .
-    substr(md5(serialize($params) . filemtime(MODX_BASE_PATH . $input)), 0, 3) .
-    '.' . $params['f'];
+	(isset($params['w']) ? $params['w'] : '') . 'x' . (isset($params['h']) ? $params['h'] : '') . '-' .
+	substr(md5(serialize($params) . filemtime(MODX_BASE_PATH . $input)), 0, 3) .
+	'.' . $params['f'];
 
 if (isset($adBlockFix) && $adBlockFix === '1')
-    $fNameSuf = str_replace('ad', 'at', $fNameSuf);
+	$fNameSuf = str_replace('ad', 'at', $fNameSuf);
 
 $outputFilename = MODX_BASE_PATH . $fNamePref . $fName . $fNameSuf;
 if (!file_exists($outputFilename)) {
-    if (!class_exists('phpthumb')) {
-        require_once MODX_BASE_PATH . $phpThumbPath . '/phpthumb.class.php';
-    }
-    $phpThumb = new phpthumb();
-    $phpThumb->config_cache_directory = MODX_BASE_PATH . $defaultCacheFolder;
-    $phpThumb->config_temp_directory = $defaultCacheFolder;
-    $phpThumb->config_document_root = MODX_BASE_PATH;
-    $phpThumb->setSourceFilename(MODX_BASE_PATH . $input);
-    foreach ($params as $key => $value) {
-        $phpThumb->setParameter($key, $value);
-    }
-    if ($phpThumb->GenerateThumbnail()) {
-        if($phpThumb->RenderToFile($outputFilename)){
-			$path_infofile = pathinfo(realpath($outputFilename));
+	if (!class_exists('phpthumb')) {
+		require_once MODX_BASE_PATH . $phpThumbPath . '/phpthumb.class.php';
+	}
+	$phpThumb = new phpthumb();
+	$phpThumb->config_cache_directory = MODX_BASE_PATH . $defaultCacheFolder;
+	$phpThumb->config_temp_directory = $defaultCacheFolder;
+	$phpThumb->config_document_root = MODX_BASE_PATH;
+	$phpThumb->setSourceFilename(MODX_BASE_PATH . $input);
+	foreach ($params as $key => $value) {
+		$phpThumb->setParameter($key, $value);
+	}
+	if ($phpThumb->GenerateThumbnail()) {
+		if($phpThumb->RenderToFile($outputFilename)){
+			$path_infofile = pathinfo(str_replace('\\','/', realpath($outputFilename)));
 			$params_evt = array(
 				"filepath"=>$path_infofile["dirname"],
 				"filename"=>$path_infofile["basename"]
 			);
 			$modx->invokeEvent("OnGenerateThumbnail", $params_evt);
 		};
-    } else {
-        $modx->logEvent(0, 3, implode('<br/>', $phpThumb->debugmessages), 'phpthumb');
-    }
+	} else {
+		$modx->logEvent(0, 3, implode('<br/>', $phpThumb->debugmessages), 'phpthumb');
+	}
 }
 
 if (isset($webp) && class_exists('\WebPConvert\WebPConvert')) {
-    if (strpos($_SERVER['HTTP_ACCEPT'], 'image/webp') !== false
-        || (strpos($_SERVER['HTTP_USER_AGENT'], ' Safari/') !== false
-            && strpos($_SERVER['HTTP_USER_AGENT'], ' Version/') === false) || strpos($_SERVER['HTTP_USER_AGENT'], ' Safari/') === false) {
-        if (file_exists($outputFilename . '.webp')) {
-            $fNameSuf .= '.webp';
-        } else {
-            WebPConvert::convert($outputFilename, $outputFilename . '.webp');
-            $fNameSuf .= '.webp';
-        }
-    }
+	if (strpos($_SERVER['HTTP_ACCEPT'], 'image/webp') !== false
+		|| (strpos($_SERVER['HTTP_USER_AGENT'], ' Safari/') !== false
+			&& strpos($_SERVER['HTTP_USER_AGENT'], ' Version/') === false) || strpos($_SERVER['HTTP_USER_AGENT'], ' Safari/') === false) {
+		if (file_exists($outputFilename . '.webp')) {
+			$fNameSuf .= '.webp';
+		} else {
+			WebPConvert::convert($outputFilename, $outputFilename . '.webp');
+			$fNameSuf .= '.webp';
+		}
+	}
 }
 
 return $fNamePref . rawurlencode($fName) . $fNameSuf;
